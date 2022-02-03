@@ -2,37 +2,8 @@ import os
 import signal
 import subprocess
 from gui import *
+from tkinter import *
 import threading
-
-
-'''
-Widgets     Description
-Label	    It is used to display text or image on the screen
-Button	    It is used to add buttons to your application
-Canvas	    It is used to draw pictures and others layouts like texts, graphics etc.
-ComboBox	It contains a down arrow to select from list of available options
-CheckButton	It displays a number of options to the user as toggle buttons from which user can select any number of options.
-RadiButton	It is used to implement one-of-many selection as it allows only one option to be selected
-Entry	    It is used to input single line text entry from user
-Frame	    It is used as container to hold and organize the widgets
-Message	    It works same as that of label and refers to multi-line and non-editable text
-Scale	    It is used to provide a graphical slider which allows to select any value from that scale
-Scrollbar	It is used to scroll down the contents. It provides a slide controller.
-SpinBox	    It is allows user to select from given set of values
-Text	    It allows user to edit multiline text and format the way it has to be displayed
-Menu	    It is used to create all kinds of menu used by an application
-'''
-
-'''
-pack()	    The Pack geometry manager packs widgets in rows or columns.
-grid()	    The Grid geometry manager puts the widgets in a 2-dimensional table. 
-            The master widget is split into a number of rows and columns, and each “cell” in the
-            resulting table can hold a widget.
-place()	    The Place geometry manager is the simplest of the three general geometry managers provided
-            in Tkinter. 
-            It allows you explicitly set the position and size of a window, either in absolute terms,
-            or relative to another window.
-'''
 
 
 class MainProcMgr:
@@ -42,8 +13,10 @@ class MainProcMgr:
     def __init__(self, main_script_path):
         self.main_script_path = main_script_path
 
-    def spawn(self):
-        return subprocess.Popen([sys.executable, self.main_script_path])
+    def spawn(self, test_plan_filename, bench_filename):
+        test_plan_path = test_plan_filename
+        bench_file_path = bench_filename
+        return subprocess.Popen([self.main_script_path, "-b", bench_file_path, "-p", "-i", test_plan_path, "-u", "false"])
 
 
 class ETCGUI(GUIProcess):
@@ -51,19 +24,40 @@ class ETCGUI(GUIProcess):
     def __init__(self, main_proc_mgr: MainProcMgr):
         super().__init__()
 
-        self.setup_window("Telecaster", 500, 200)
+        self.setup_window("Telecaster", 800, 600)
+
+        self.label = self.create_label(240, 50)
+        self.label.set_label_text("Telecaster GUI", text_size=32, text_weight="bold")
+        self.label.set_label_color((0, 0, 0), (0, 255, 0))
 
         self.main_proc_mgr = main_proc_mgr
 
         self.main_proc = None
 
+        # working
+        # gui_state = self.load_gui_state()
+
+        self.tp_entry_label = self.create_label(100, 140)
+        self.tp_entry_label.set_label_text("Test Plan", text_size=16, text_weight="bold")
+        self.tp_entry_label.set_label_color((0, 0, 0), (0, 255, 0))
+        self.tp_entry = self.create_entry(100, 175, 600)
+        self.tp_entry.set_entry_color((0, 0, 0), (0, 255, 0))
+        self.tp_entry.set_text_size(12)
+
+        self.bench_entry_label = self.create_label(100, 240)
+        self.bench_entry_label.set_label_text("Bench File", text_size=16, text_weight="bold")
+        self.bench_entry_label.set_label_color((0, 0, 0), (0, 255, 0))
+        self.bench_entry = self.create_entry(100, 275, 600)
+        self.bench_entry.set_entry_color((0, 0, 0), (0, 255, 0))
+        self.bench_entry.set_text_size(12)
+
         # main button
-        self.main_button = self.create_button(0, 0, 200, 200)
+        self.main_button = self.create_button(50, 350, 200, 200)
         self.main_button.set_button_callback(self.main_button_click)
         self.reset_main_button()
 
         # abort button
-        self.abort_button = self.create_button(300, 0, 200, 200)
+        self.abort_button = self.create_button(550, 350, 200, 200)
         self.abort_button.set_button_callback(self.abort_button_click)
         self.abort_button.set_button_text("Abort", 16, "bold")
         self.abort_button.set_button_color((255, 0, 0), (0, 0, 0))
@@ -76,7 +70,16 @@ class ETCGUI(GUIProcess):
         button_state = self.main_button.get_button_state()
 
         if self.main_proc is None:
-            self.main_proc = self.main_proc_mgr.spawn()
+
+            test_plan_filename = self.tp_entry.get_entry_text()
+            if test_plan_filename[-4:] != ".csv":
+                test_plan_filename += ".csv"
+
+            bench_filename = self.bench_entry.get_entry_text()
+            if bench_filename[-5:] != ".xlsx":
+                bench_filename += ".xlsx"
+
+            self.main_proc = self.main_proc_mgr.spawn(test_plan_filename, bench_filename)
 
             self.main_running()
 
@@ -85,11 +88,11 @@ class ETCGUI(GUIProcess):
 
         else:
             if button_state == "Run":
-                # os.kill(self.main_proc.pid, signal.SIGSTOP)
+                os.kill(self.main_proc.pid, signal.SIGSTOP)
                 self.main_pausing()
 
             else:
-                # os.kill(self.main_proc.pid, signal.SIGCONT)
+                os.kill(self.main_proc.pid, signal.SIGCONT)
                 self.main_running()
 
     def abort_button_click(self):
@@ -123,12 +126,21 @@ class ETCGUI(GUIProcess):
                 self.reset_main_button()
                 return
 
+    def save_gui_state(self):
+        pass
+
+    def load_gui_state(self):
+        pass
+
     def on_exiting(self):
+        # Abort any running tests before exiting the gui.
         self.abort_button_click()
+        self.save_gui_state()
         self.window.destroy()
 
 
-MAIN_SCRIPT_PATH = "C:\\Users\\minjiang\\Documents\\Python\\gui\\main.py"
+# MAIN_SCRIPT_PATH = "C:\\Users\\minjiang\\Documents\\Python\\gui\\main.py"
+MAIN_SCRIPT_PATH = "/Applications/RFDATE/rfdate/Tester/RFTestPyMain.py"
 main_proc_mgr = MainProcMgr(MAIN_SCRIPT_PATH)
 
 G = ETCGUI(main_proc_mgr)
