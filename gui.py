@@ -62,8 +62,12 @@ class MyButton:
         self.button['font'] = font.Font(size=text_size, weight=text_weight)
 
     def set_button_color(self, background=(0, 0, 0), foreground=(0, 255, 0)):
+        # style = ttk.Style()
+        # style.configure("style.TButton", background=Color.rgb_to_hex(background), foreground=Color.rgb_to_hex(foreground))
+        # style.map("style.TButton", foreground=[("active", Color.rgb_to_hex(foreground))])
         self.button.configure(background=Color.rgb_to_hex(background), activebackground=Color.rgb_to_hex(background),
                               foreground=Color.rgb_to_hex(foreground), activeforeground=Color.rgb_to_hex(foreground))
+        # self.button.configure(style="style.TButton")
 
     def set_button_state(self, state):
         self.state = state
@@ -84,7 +88,11 @@ class MyEntry:
 
     def set_entry_color(self, background=(0, 0, 0), foreground=(0, 255, 0)):
         style = ttk.Style()
-        style.configure("style.TEntry", background=Color.rgb_to_hex(background), foreground=Color.rgb_to_hex(foreground))
+        style.configure("style.TEntry", background=Color.rgb_to_hex(background), foreground=Color.rgb_to_hex(foreground), insertcolor=Color.rgb_to_hex(foreground))
+        
+        # Needed to keep the text green when GUI window not selected
+        style.map("style.TEntry", foreground=[("disabled", Color.rgb_to_hex(foreground))])
+        
         self.entry.configure(style="style.TEntry")
 
     def get_entry_text(self):
@@ -97,11 +105,20 @@ class GUIProcess:
         self.window = Tk()
         self.window.configure(bg=Color.rgb_to_hex((0, 0, 0)))
 
+        # Binding the Return and KP_Enter key to on_return command.
         self.window.bind("<Return>", self.on_return)
+        self.window.bind("<KP_Enter>", self.on_return)
+
+        # Binding the mouse click event to remove focus.
+        self.window.bind_all("<Button-1>", lambda event: event.widget.focus_set())
 
     def setup_window(self, title="GUI", width=500, height=500):
         self.window.title(title)
         self.window.geometry("{0}x{1}".format(width, height))
+
+        # Force the window to a constant size (setup size).
+        self.window.minsize(width, height)
+        self.window.maxsize(width, height)
 
     def create_label(self, x=0, y=0):
         return MyLabel(self.window, x=x, y=y)
@@ -116,5 +133,5 @@ class GUIProcess:
     # Python question: where does the argument event come from?
     # It is not explicitly passed in the code: self.window.bind("<Key>", self.on_return)
     def on_return(self, event):
-        if event.keysym == "Return":
+        if event.keysym == "Return" or event.keysym == "KP_Enter":
             self.window.focus_set()
