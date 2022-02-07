@@ -82,11 +82,16 @@ class MyEntry:
         self.entry_text = tk.StringVar()
         self.entry = ttk.Entry(window, textvariable=self.entry_text)
         self.entry.place(x=x, y=y, width=width)
+        self.background = (0, 0, 0)
+        self.foreground = (0, 255, 0)
 
     def set_text_size(self, text_size=10):
         self.entry.configure(font="Courier {text_size}".format(text_size=text_size))
 
     def set_entry_color(self, background=(0, 0, 0), foreground=(0, 255, 0)):
+        self.background = background
+        self.foreground = foreground
+
         style = ttk.Style()
         style.configure("style.TEntry", background=Color.rgb_to_hex(background), foreground=Color.rgb_to_hex(foreground), insertcolor=Color.rgb_to_hex(foreground))
         
@@ -94,6 +99,14 @@ class MyEntry:
         style.map("style.TEntry", foreground=[("disabled", Color.rgb_to_hex(foreground))])
         
         self.entry.configure(style="style.TEntry")
+
+    def disable(self):
+        self.entry.configure(state="disable")
+        self.set_entry_color(Color.dull50(self.background), Color.dull50(self.foreground))
+
+    def enable(self):
+        self.entry.configure(state="active")
+        self.set_entry_color(self.background, self.foreground)
 
     def get_entry_text(self):
         return self.entry.get()

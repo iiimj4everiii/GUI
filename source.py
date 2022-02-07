@@ -63,7 +63,7 @@ class ETCGUI(GUIProcess):
         self.abort_button = self.create_button(550, 350, 200, 200)
         self.abort_button.set_button_callback(self.abort_button_click)
         self.abort_button.set_button_text("Abort", 16, "bold")
-        self.abort_button.set_button_color((255, 0, 0), (0, 0, 0))
+        self.abort_button.set_button_color((255, 255, 255), (255, 0, 0))
 
         # main button
         self.main_button = self.create_button(50, 350, 200, 200)
@@ -76,8 +76,8 @@ class ETCGUI(GUIProcess):
 
     def main_button_click(self):
 
-        self.tp_entry.entry.configure(state="disable")
-        self.bench_entry.entry.configure(state="disable")
+        self.tp_entry.disable()
+        self.bench_entry.disable()
 
         if self.main_proc is None:
 
@@ -126,8 +126,8 @@ class ETCGUI(GUIProcess):
         self.main_button.set_button_text("Run", 16, "bold")
         self.main_button.set_button_color((255, 255, 255), (0, 0, 0))
 
-        self.tp_entry.entry.configure(state="active")
-        self.bench_entry.entry.configure(state="active")
+        self.tp_entry.enable()
+        self.bench_entry.enable()
 
     def polling(self):
         while True:
