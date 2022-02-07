@@ -82,15 +82,16 @@ class MyEntry:
         self.entry_text = tk.StringVar()
         self.entry = ttk.Entry(window, textvariable=self.entry_text)
         self.entry.place(x=x, y=y, width=width)
-        self.background = (0, 0, 0)
-        self.foreground = (0, 255, 0)
+        self.background = None
+        self.foreground = None
 
     def set_text_size(self, text_size=10):
         self.entry.configure(font="Courier {text_size}".format(text_size=text_size))
 
     def set_entry_color(self, background=(0, 0, 0), foreground=(0, 255, 0)):
-        self.background = background
-        self.foreground = foreground
+        if self.background is None:
+            self.background = background
+            self.foreground = foreground
 
         style = ttk.Style()
         style.configure("style.TEntry", background=Color.rgb_to_hex(background), foreground=Color.rgb_to_hex(foreground), insertcolor=Color.rgb_to_hex(foreground))

@@ -62,7 +62,7 @@ class ETCGUI(GUIProcess):
         # abort button
         self.abort_button = self.create_button(550, 350, 200, 200)
         self.abort_button.set_button_callback(self.abort_button_click)
-        self.abort_button.set_button_text("Abort", 16, "bold")
+        self.abort_button.set_button_text("Abort", 24, "bold")
         self.abort_button.set_button_color((255, 255, 255), (255, 0, 0))
 
         # main button
@@ -110,20 +110,20 @@ class ETCGUI(GUIProcess):
             self.reset_gui_state()
 
     def main_pausing(self):
-        self.main_button.set_button_text("Resume", 16, "bold")
+        self.main_button.set_button_text("Resume", 24, "bold")
         self.main_button.set_button_color((255, 255, 255), (0, 0, 0))
 
         self.main_button.set_button_state("Paused")
 
     def main_running(self):
-        self.main_button.set_button_text("Pause", 16, "bold")
+        self.main_button.set_button_text("Pause", 24, "bold")
         self.main_button.set_button_color((255, 255, 255), (255, 0, 0))
 
         self.main_button.set_button_state("Run")
 
     def reset_gui_state(self):
         self.main_button.set_button_state("Ready")
-        self.main_button.set_button_text("Run", 16, "bold")
+        self.main_button.set_button_text("Run", 24, "bold")
         self.main_button.set_button_color((255, 255, 255), (0, 0, 0))
 
         self.tp_entry.enable()
