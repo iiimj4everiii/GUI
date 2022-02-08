@@ -11,6 +11,7 @@ class MainProcMgr:
     main_proc = None
 
     def __init__(self, main_script_path, test_plan_file_dir, bench_file_dir):
+
         self.main_script_path = main_script_path
 
         self.test_plan_file_dir = check_and_fix_dir_path(test_plan_file_dir)
@@ -23,7 +24,8 @@ class MainProcMgr:
         test_plan_path = self.test_plan_file_dir + test_plan_filename
         bench_file_path = self.bench_file_dir + bench_filename
 
-        return subprocess.Popen([python_version, self.main_script_path, "-b", bench_file_path, "-p", "-i", test_plan_path, "-u", "false"])
+        return subprocess.Popen([python_version, self.main_script_path, "-b", bench_file_path, "-p", "-i",
+                                 test_plan_path, "-u", "false"])
 
 
 class ETCGUI(GUIProcess):
@@ -160,10 +162,8 @@ class ETCGUI(GUIProcess):
 
 
 # MAIN_SCRIPT_PATH = "C:\\Users\\minjiang\\Documents\\Python\\gui\\main.py"
-MAIN_SCRIPT_PATH = "/Applications/RFDATE/rfdate/Tester/RFTestPyMain.py"
-TEST_PLAN_FILE_DIR = "/Users/cdma_gsm/Desktop/et_files/"
-BENCH_FILE_DIR = "/Users/cdma_gsm/Desktop/et_files/"
-main_proc_mgr = MainProcMgr(MAIN_SCRIPT_PATH, TEST_PLAN_FILE_DIR, BENCH_FILE_DIR)
+settings = read_json_file_to_dict("Path_Settings.json")
+main_proc_mgr = MainProcMgr(settings["main_script_path"], settings["test_plan_file dir"], settings["bench_file_dir"])
 
 G = ETCGUI(main_proc_mgr)
 
