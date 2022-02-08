@@ -1,10 +1,9 @@
+from gui import *
+from helpers import *
 import os
 import signal
 import subprocess
-from gui import *
-from tkinter import *
 import threading
-import sys
 
 
 class MainProcMgr:
@@ -14,30 +13,17 @@ class MainProcMgr:
     def __init__(self, main_script_path, test_plan_file_dir, bench_file_dir):
         self.main_script_path = main_script_path
 
-        self.test_plan_file_dir = self.check_and_fix_dir_path(test_plan_file_dir)
+        self.test_plan_file_dir = check_and_fix_dir_path(test_plan_file_dir)
 
-        self.bench_file_dir = self.check_and_fix_dir_path(bench_file_dir)
+        self.bench_file_dir = check_and_fix_dir_path(bench_file_dir)
 
     def spawn(self, test_plan_filename, bench_filename):
 
-        assert(sys.version_info[0] == 3)
-
-        python_version = self.get_python_version()
-
+        python_version = get_python_version()
         test_plan_path = self.test_plan_file_dir + test_plan_filename
         bench_file_path = self.bench_file_dir + bench_filename
+
         return subprocess.Popen([python_version, self.main_script_path, "-b", bench_file_path, "-p", "-i", test_plan_path, "-u", "false"])
-
-    @staticmethod
-    def check_and_fix_dir_path(dir_path):
-        if dir_path[-1] != '/':
-            dir_path += '/'
-
-        return dir_path
-
-    @staticmethod
-    def get_python_version():
-        return "python" + str(sys.version_info[0]) + '.' + str(sys.version_info[1])
 
 
 class ETCGUI(GUIProcess):
@@ -55,12 +41,10 @@ class ETCGUI(GUIProcess):
 
         self.main_proc = None
 
-        # working
-        # gui_state = self.load_gui_state()
-
         self.tp_entry_label = self.create_label(100, 150)
         self.tp_entry_label.set_label_text("Test Plan:", text_size=16, text_weight="bold")
         self.tp_entry_label.set_label_color((0, 0, 0), (0, 255, 0))
+
         self.tp_entry = self.create_entry(100, 175, 600)
         self.tp_entry.set_entry_color((0, 0, 0), (0, 255, 0))
         self.tp_entry.set_text_size(14)
@@ -68,6 +52,7 @@ class ETCGUI(GUIProcess):
         self.bench_entry_label = self.create_label(100, 250)
         self.bench_entry_label.set_label_text("Bench File:", text_size=16, text_weight="bold")
         self.bench_entry_label.set_label_color((0, 0, 0), (0, 255, 0))
+
         self.bench_entry = self.create_entry(100, 275, 600)
         self.bench_entry.set_entry_color((0, 0, 0), (0, 255, 0))
         self.bench_entry.set_text_size(14)
@@ -87,23 +72,24 @@ class ETCGUI(GUIProcess):
         # window exiting behavior
         self.window.protocol("WM_DELETE_WINDOW", self.on_exiting)
 
-    def main_button_click(self):
+        self.load_gui_state()
 
-        self.tp_entry.disable()
-        self.bench_entry.disable()
+    def main_button_click(self):
 
         if self.main_proc is None:
 
-            test_plan_filename = self.check_and_fix_file_extension(self.tp_entry.get_entry_text(), "csv")
+            test_plan_filename = check_and_fix_file_extension(self.tp_entry.get_entry_text(), "csv")
 
-            bench_filename = self.check_and_fix_file_extension(self.bench_entry.get_entry_text(), "xlsx")
+            bench_filename = check_and_fix_file_extension(self.bench_entry.get_entry_text(), "xlsx")
 
             self.main_proc = self.main_proc_mgr.spawn(test_plan_filename, bench_filename)
 
+            self.tp_entry.disable()
+            self.bench_entry.disable()
             self.main_running()
 
-            th = threading.Thread(target=self.polling)
-            th.start()
+            th_run_main = threading.Thread(target=self.main_proc_polling)
+            th_run_main.start()
 
         else:
             button_state = self.main_button.get_button_state()
@@ -142,7 +128,7 @@ class ETCGUI(GUIProcess):
         self.tp_entry.enable()
         self.bench_entry.enable()
 
-    def polling(self):
+    def main_proc_polling(self):
         while True:
             if self.main_proc is None:
                 return
@@ -152,29 +138,24 @@ class ETCGUI(GUIProcess):
                 self.reset_gui_state()
                 return
 
-    @staticmethod
-    def check_and_fix_file_extension(filename, expected_extension):
-        if expected_extension[0] == '.':
-            expected_extension = expected_extension[1:]
-
-        ext_length = len(expected_extension)
-        assert ext_length > 0
-
-        if filename[-ext_length:] != expected_extension:
-            return filename + '.' + expected_extension
-
-        return filename
-
     def save_gui_state(self):
-        pass
+        gui_state = {
+            "tp_entry":     self.tp_entry.get_entry_text(),
+            "bench_entry":  self.bench_entry.get_entry_text()
+        }
+
+        write_dict_to_json_file(gui_state, "gui_state")
 
     def load_gui_state(self):
-        pass
+        gui_state = read_json_file_to_dict("gui_state.json")
+
+        self.tp_entry.set_entry_text(gui_state["tp_entry"])
+        self.bench_entry.set_entry_text(gui_state["bench_entry"])
 
     def on_exiting(self):
         # Abort any running tests before exiting the gui.
-        self.abort_button_click()
         self.save_gui_state()
+        self.abort_button_click()
         self.window.destroy()
 
 

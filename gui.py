@@ -109,6 +109,9 @@ class MyEntry:
         self.entry.configure(state="active")
         self.set_entry_color(self.background, self.foreground)
 
+    def set_entry_text(self, entry_text):
+        self.entry.insert(0, entry_text)
+
     def get_entry_text(self):
         return self.entry.get()
 
