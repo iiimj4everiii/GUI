@@ -80,7 +80,7 @@ class MyEntry:
 
     def __init__(self, window, x=0, y=0, width=100):
         self.entry_text = tk.StringVar()
-        self.entry = ttk.Entry(window, textvariable=self.entry_text)
+        self.entry = ttk.Entry(window, textvariable=self.entry_text, justify="center")
         self.entry.place(x=x, y=y, width=width)
         self.background = None
         self.foreground = None

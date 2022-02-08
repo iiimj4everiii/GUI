@@ -1,3 +1,4 @@
+import os
 import sys
 import json
 
@@ -40,3 +41,9 @@ def write_dict_to_json_file(json_dict, filename):
         json.dump(json_dict, json_file, indent=4)
 
     json_file.close()
+
+
+def makedir(parent_dir, dir_name):
+    directory = os.path.join(parent_dir, dir_name)
+    if not os.path.isdir(directory):
+        os.mkdir(directory)
