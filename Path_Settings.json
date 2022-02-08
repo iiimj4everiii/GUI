@@ -2,7 +2,6 @@
     "main_script_path": "/Applications/RFDATE/rfdate/Tester/RFTestPyMain.py",
     "test_plan_file dir": "/Users/cdma_gsm/Desktop/et_files/",
     "bench_file_dir": "/Users/cdma_gsm/Desktop/et_files/",
-    "result_parent_dir": "/Users/cdma_gsm/Desktop/",
-    "gui_state_dir": "/Applications/RFDATE_GUI",
+    "result_parent_dir": "/Users/cdma_gsm/Output Files/PA_Eval_ET_Sequence",
     "magic": "on"
 }

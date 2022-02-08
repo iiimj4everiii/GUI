@@ -9,11 +9,13 @@ class MainProcMgr:
 
     main_proc = None
 
-    def __init__(self, gui_program_path):
+    def __init__(self, gui_program_dir):
 
         # MAIN_SCRIPT_PATH = "C:\\Users\\minjiang\\Documents\\Python\\gui\\main.py"
 
-        path_settings = read_json_file_to_dict(os.path.join(gui_program_path, "Path_Settings.json"))
+        self.gui_program_dir = check_and_fix_dir_path(gui_program_dir)
+
+        path_settings = read_json_file_to_dict(os.path.join(self.gui_program_dir, "Path_Settings.json"))
 
         self.main_script_path = path_settings["main_script_path"]
 
@@ -22,8 +24,6 @@ class MainProcMgr:
         self.bench_file_dir = check_and_fix_dir_path(path_settings["bench_file_dir"])
 
         self.result_parent_dir = check_and_fix_dir_path(path_settings["result_parent_dir"])
-
-        self.gui_state_dir = check_and_fix_dir_path(path_settings["gui_state_dir"])
 
     def spawn(self, dut_name, comment, test_plan_filename, bench_filename):
 
@@ -181,17 +181,18 @@ class ETCGUI(GUIProcess):
             "bench_entry":      self.bench_entry.get_entry_text()
         }
 
-        write_dict_to_json_file(gui_state, os.path.join(self.main_proc_mgr.gui_state_dir, "gui_state"))
+        write_dict_to_json_file(gui_state, os.path.join(self.main_proc_mgr.gui_program_dir, "gui_state"))
 
     def load_gui_state(self):
-        gui_state = read_json_file_to_dict(os.path.join(self.main_proc_mgr.gui_state_dir, "gui_state.json"))
+        gui_state = read_json_file_to_dict(os.path.join(self.main_proc_mgr.gui_program_dir, "gui_state.json"))
 
         self.DUT_entry.set_entry_text(gui_state["dut_entry"])
         self.comment_entry.set_entry_text(gui_state["comment_entry"])
         self.tp_entry.set_entry_text(gui_state["tp_entry"])
         self.bench_entry.set_entry_text(gui_state["bench_entry"])
 
-        path_settings = read_json_file_to_dict("Path_Settings.json")
+        path_settings_path = os.path.join(self.main_proc_mgr.gui_program_dir, "Path_Settings")
+        path_settings = read_json_file_to_dict(path_settings_path + ".json")
         if path_settings["magic"] == "on":
             self.title_label.set_label_color((0, 0, 0), (255, 0, 0))
 
@@ -203,16 +204,17 @@ class ETCGUI(GUIProcess):
 
     def check_magic(self, command):
         if command[0:7].upper() == "--MAGIC":
-            path_settings = read_json_file_to_dict("Path_Settings.json")
+            path_settings_path = os.path.join(self.main_proc_mgr.gui_program_dir, "Path_Settings")
+            path_settings = read_json_file_to_dict(path_settings_path + ".json")
             if command[8:].upper() == "ON":
                 path_settings["magic"] = "on"
                 self.title_label.set_label_color((0, 0, 0), (255, 0, 0))
-                write_dict_to_json_file(path_settings, "Path_Settings")
+                write_dict_to_json_file(path_settings, path_settings_path)
 
             elif command[8:].upper() == "OFF":
                 path_settings["magic"] = "off"
                 self.title_label.set_label_color((0, 0, 0), (0, 255, 0))
-                write_dict_to_json_file(path_settings, "Path_Settings")
+                write_dict_to_json_file(path_settings, path_settings_path)
 
             else:
                 print("Unknown command.")
@@ -224,9 +226,9 @@ class ETCGUI(GUIProcess):
         return False
 
 
-GUI_PROGRAM_PATH = "/Applications/RFDATE_GUI/"
+GUI_PROGRAM_DIR = "/Applications/RFDATE_GUI/"
 
-main_proc_mgr = MainProcMgr(GUI_PROGRAM_PATH)
+main_proc_mgr = MainProcMgr(GUI_PROGRAM_DIR)
 
 G = ETCGUI(main_proc_mgr)
 
