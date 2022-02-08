@@ -110,10 +110,11 @@ class MyEntry:
         self.set_entry_color(self.background, self.foreground)
 
     def set_entry_text(self, entry_text):
-        self.entry.insert(0, entry_text)
+        self.entry.delete(0, len(self.get_entry_text()))
+        self.entry.insert(0, entry_text.strip())
 
     def get_entry_text(self):
-        return self.entry.get()
+        return self.entry.get().strip()
 
 
 class GUIProcess:

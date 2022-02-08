@@ -9,11 +9,11 @@ class MainProcMgr:
 
     main_proc = None
 
-    def __init__(self):
+    def __init__(self, gui_program_path):
 
         # MAIN_SCRIPT_PATH = "C:\\Users\\minjiang\\Documents\\Python\\gui\\main.py"
 
-        path_settings = read_json_file_to_dict("Path_Settings.json")
+        path_settings = read_json_file_to_dict(os.path.join(gui_program_path, "Path_Settings.json"))
 
         self.main_script_path = path_settings["main_script_path"]
 
@@ -22,6 +22,8 @@ class MainProcMgr:
         self.bench_file_dir = check_and_fix_dir_path(path_settings["bench_file_dir"])
 
         self.result_parent_dir = check_and_fix_dir_path(path_settings["result_parent_dir"])
+
+        self.gui_state_dir = check_and_fix_dir_path(path_settings["gui_state_dir"])
 
     def spawn(self, dut_name, comment, test_plan_filename, bench_filename):
 
@@ -51,7 +53,7 @@ class ETCGUI(GUIProcess):
 
         self.setup_window("Telecaster", 900, 700)
 
-        self.title_label = self.create_label(320, 50)
+        self.title_label = self.create_label(335, 50)
         self.title_label.set_label_text("Telecaster GUI", text_size=32, text_weight="bold")
         self.title_label.set_label_color((0, 0, 0), (0, 255, 0))
 
@@ -87,12 +89,12 @@ class ETCGUI(GUIProcess):
     def Telecaster_entry(self, label_x, label_y, label_text, entry_x, entry_y, entry_width):
 
         label = self.create_label(label_x, label_y)
-        label.set_label_text(label_text, text_size=16, text_weight="bold")
+        label.set_label_text(label_text, text_size=18, text_weight="bold")
         label.set_label_color((0, 0, 0), (0, 255, 0))
 
         entry = self.create_entry(entry_x, entry_y, entry_width)
         entry.set_entry_color((0, 0, 0), (0, 255, 0))
-        entry.set_text_size(14)
+        entry.set_text_size(16)
 
         return entry
 
@@ -102,13 +104,16 @@ class ETCGUI(GUIProcess):
 
             dut = self.DUT_entry.get_entry_text()
 
+            if self.check_magic(dut):
+                return
+
             comment = self.comment_entry.get_entry_text()
 
             test_plan_filename = check_and_fix_file_extension(self.tp_entry.get_entry_text(), "csv")
 
             bench_filename = check_and_fix_file_extension(self.bench_entry.get_entry_text(), "xlsx")
 
-            self.main_proc = self.main_proc_mgr.spawn(dut, comment, test_plan_filename, bench_filename)
+            self.main_proc = self.main_proc_mgr.spawn(dut.strip(), comment.strip(), test_plan_filename, bench_filename)
 
             self.DUT_entry.disable()
             self.comment_entry.disable()
@@ -176,15 +181,19 @@ class ETCGUI(GUIProcess):
             "bench_entry":      self.bench_entry.get_entry_text()
         }
 
-        write_dict_to_json_file(gui_state, "gui_state")
+        write_dict_to_json_file(gui_state, os.path.join(self.main_proc_mgr.gui_state_dir, "gui_state"))
 
     def load_gui_state(self):
-        gui_state = read_json_file_to_dict("gui_state.json")
+        gui_state = read_json_file_to_dict(os.path.join(self.main_proc_mgr.gui_state_dir, "gui_state.json"))
 
         self.DUT_entry.set_entry_text(gui_state["dut_entry"])
         self.comment_entry.set_entry_text(gui_state["comment_entry"])
         self.tp_entry.set_entry_text(gui_state["tp_entry"])
         self.bench_entry.set_entry_text(gui_state["bench_entry"])
+
+        path_settings = read_json_file_to_dict("Path_Settings.json")
+        if path_settings["magic"] == "on":
+            self.title_label.set_label_color((0, 0, 0), (255, 0, 0))
 
     def on_exiting(self):
         # Abort any running tests before exiting the gui.
@@ -192,8 +201,32 @@ class ETCGUI(GUIProcess):
         self.abort_button_click()
         self.window.destroy()
 
+    def check_magic(self, command):
+        if command[0:7].upper() == "--MAGIC":
+            path_settings = read_json_file_to_dict("Path_Settings.json")
+            if command[8:].upper() == "ON":
+                path_settings["magic"] = "on"
+                self.title_label.set_label_color((0, 0, 0), (255, 0, 0))
+                write_dict_to_json_file(path_settings, "Path_Settings")
 
-main_proc_mgr = MainProcMgr()
+            elif command[8:].upper() == "OFF":
+                path_settings["magic"] = "off"
+                self.title_label.set_label_color((0, 0, 0), (0, 255, 0))
+                write_dict_to_json_file(path_settings, "Path_Settings")
+
+            else:
+                print("Unknown command.")
+
+            self.DUT_entry.set_entry_text("")
+
+            return True
+
+        return False
+
+
+GUI_PROGRAM_PATH = "/Applications/RFDATE_GUI/"
+
+main_proc_mgr = MainProcMgr(GUI_PROGRAM_PATH)
 
 G = ETCGUI(main_proc_mgr)
 
