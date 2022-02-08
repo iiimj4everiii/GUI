@@ -4,6 +4,7 @@ import subprocess
 from gui import *
 from tkinter import *
 import threading
+import sys
 
 
 class MainProcMgr:
@@ -13,18 +14,31 @@ class MainProcMgr:
     def __init__(self, main_script_path, test_plan_file_dir, bench_file_dir):
         self.main_script_path = main_script_path
 
-        if test_plan_file_dir[-1] != '/':
-            test_plan_file_dir += '/'
-        self.test_plan_file_dir = test_plan_file_dir
+        self.test_plan_file_dir = self.check_and_fix_dir_path(test_plan_file_dir)
 
-        if bench_file_dir[-1] != '/':
-            bench_file_dir += '/'
-        self.bench_file_dir = bench_file_dir
+        self.bench_file_dir = self.check_and_fix_dir_path(bench_file_dir)
 
     def spawn(self, test_plan_filename, bench_filename):
+
+        assert(sys.version_info[0] == 3)
+
+        python_version = self.get_python_version()
+
         test_plan_path = self.test_plan_file_dir + test_plan_filename
         bench_file_path = self.bench_file_dir + bench_filename
-        return subprocess.Popen([self.main_script_path, "-b", bench_file_path, "-p", "-i", test_plan_path, "-u", "false"])
+        return subprocess.Popen([python_version, self.main_script_path, "-b", bench_file_path, "-p", "-i", test_plan_path, "-u", "false"])
+
+    @staticmethod
+    def check_and_fix_dir_path(dir_path):
+        if dir_path[-1] != '/':
+            dir_path += '/'
+
+        return dir_path
+
+    @staticmethod
+    def get_python_version():
+        assert (sys.version_info[0] == 3)
+        return "python3." + str(sys.version_info[1])
 
 
 class ETCGUI(GUIProcess):
