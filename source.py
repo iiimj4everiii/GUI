@@ -37,8 +37,7 @@ class MainProcMgr:
 
     @staticmethod
     def get_python_version():
-        assert (sys.version_info[0] == 3)
-        return "python3." + str(sys.version_info[1])
+        return "python" + str(sys.version_info[0]) + '.' + str(sys.version_info[1])
 
 
 class ETCGUI(GUIProcess):
