@@ -80,7 +80,7 @@ class MyEntry:
 
     def __init__(self, window, x=0, y=0, width=100):
         self.entry_text = tk.StringVar()
-        self.entry = ttk.Entry(window, textvariable=self.entry_text)
+        self.entry = ttk.Entry(window, textvariable=self.entry_text, justify="center")
         self.entry.place(x=x, y=y, width=width)
         self.background = None
         self.foreground = None
@@ -109,8 +109,12 @@ class MyEntry:
         self.entry.configure(state="active")
         self.set_entry_color(self.background, self.foreground)
 
+    def set_entry_text(self, entry_text):
+        self.entry.delete(0, len(self.get_entry_text()))
+        self.entry.insert(0, entry_text.strip())
+
     def get_entry_text(self):
-        return self.entry.get()
+        return self.entry.get().strip()
 
 
 class GUIProcess:
