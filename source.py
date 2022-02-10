@@ -1,5 +1,6 @@
 from gui import *
 from helpers import *
+from tc_gui_event_handler import *
 import signal
 import subprocess
 import threading
@@ -25,7 +26,7 @@ class MainProcMgr:
 
         self.result_parent_dir = check_and_fix_dir_path(path_settings["result_parent_dir"])
 
-    def spawn(self, dut_name, comment, test_plan_filename, bench_filename):
+    def spawn(self, dut_name, test_plan_filename, bench_filename):
 
         python_version = get_python_version()
         test_plan_path = self.test_plan_file_dir + test_plan_filename
@@ -36,20 +37,22 @@ class MainProcMgr:
 
         makedir(self.result_parent_dir, dut_name)
 
-        if comment == "":
-            return subprocess.Popen([python_version, self.main_script_path, "-b", bench_file_path, "-p", "-i",
-                                     test_plan_path, "--outputdir", os.path.join(self.result_parent_dir, dut_name),
-                                     "-u", "false"])
+        output_dir = os.path.join(self.result_parent_dir, dut_name)
 
         return subprocess.Popen([python_version, self.main_script_path, "-b", bench_file_path, "-p", "-i",
-                                 test_plan_path, "--outputdir", os.path.join(self.result_parent_dir, dut_name),
-                                 "-o", comment, "-u", "false"])
+                                 test_plan_path, "--outputdir", output_dir, "-u", "false"], stdout=subprocess.PIPE)
 
 
-class ETCGUI(GUIProcess):
+class TCGUI(GUIProcess):
 
     def __init__(self, main_proc_mgr: MainProcMgr):
         super().__init__()
+
+        self.dut = ""
+
+        self.output_file_path = ""
+
+        self.extra_folder_name = ""
 
         self.setup_window("Telecaster", 900, 700)
 
@@ -79,12 +82,13 @@ class ETCGUI(GUIProcess):
         self.main_button = self.create_button(50, 450, 200, 200)
         self.main_button.set_button_callback(self.main_button_click)
 
+        self.event_handler =
+
         self.reset_gui_state()
+        self.load_gui_state()
 
         # window exiting behavior
         self.window.protocol("WM_DELETE_WINDOW", self.on_exiting)
-
-        self.load_gui_state()
 
     def Telecaster_entry(self, label_x, label_y, label_text, entry_x, entry_y, entry_width):
 
@@ -98,71 +102,6 @@ class ETCGUI(GUIProcess):
 
         return entry
 
-    def main_button_click(self):
-
-        if self.main_proc is None:
-
-            dut = self.DUT_entry.get_entry_text()
-
-            if self.check_magic(dut):
-                return
-
-            comment = self.comment_entry.get_entry_text()
-
-            test_plan_filename = check_and_fix_file_extension(self.tp_entry.get_entry_text(), "csv")
-
-            bench_filename = check_and_fix_file_extension(self.bench_entry.get_entry_text(), "xlsx")
-
-            self.main_proc = self.main_proc_mgr.spawn(dut.strip(), comment.strip(), test_plan_filename, bench_filename)
-
-            self.DUT_entry.disable()
-            self.comment_entry.disable()
-            self.tp_entry.disable()
-            self.bench_entry.disable()
-            self.main_running()
-
-            th_run_main = threading.Thread(target=self.main_proc_polling)
-            th_run_main.start()
-
-        else:
-            button_state = self.main_button.get_button_state()
-
-            if button_state == "Run":
-                os.kill(self.main_proc.pid, signal.SIGSTOP)
-                self.main_pausing()
-
-            else:
-                os.kill(self.main_proc.pid, signal.SIGCONT)
-                self.main_running()
-
-    def abort_button_click(self):
-        if self.main_proc is not None:
-            os.kill(self.main_proc.pid, signal.SIGTERM)
-            self.main_proc = None
-            self.reset_gui_state()
-
-    def main_pausing(self):
-        self.main_button.set_button_text("Resume", 24, "bold")
-        self.main_button.set_button_color((255, 255, 255), (0, 0, 0))
-
-        self.main_button.set_button_state("Paused")
-
-    def main_running(self):
-        self.main_button.set_button_text("Pause", 24, "bold")
-        self.main_button.set_button_color((255, 255, 255), (255, 0, 0))
-
-        self.main_button.set_button_state("Run")
-
-    def reset_gui_state(self):
-        self.main_button.set_button_state("Ready")
-        self.main_button.set_button_text("Run", 24, "bold")
-        self.main_button.set_button_color((255, 255, 255), (0, 0, 0))
-
-        self.DUT_entry.enable()
-        self.comment_entry.enable()
-        self.tp_entry.enable()
-        self.bench_entry.enable()
-
     def main_proc_polling(self):
         while True:
             if self.main_proc is None:
@@ -171,30 +110,27 @@ class ETCGUI(GUIProcess):
             if self.main_proc.poll() is not None:
                 self.main_proc = None
                 self.reset_gui_state()
+
+                comment = self.comment_entry.get_entry_text().strip()
+                if comment != "":
+                    result_dir = check_and_fix_dir_path(os.path.join(self.main_proc_mgr.result_parent_dir, self.dut))
+                    os.rename(src=os.path.join(result_dir, self.extra_folder_name), dst=os.path.join(result_dir, comment))
+
                 return
 
-    def save_gui_state(self):
-        gui_state = {
-            "dut_entry":        self.DUT_entry.get_entry_text(),
-            "comment_entry":    self.comment_entry.get_entry_text(),
-            "tp_entry":         self.tp_entry.get_entry_text(),
-            "bench_entry":      self.bench_entry.get_entry_text()
-        }
+            main_proc_stdout = self.main_proc.stdout.readline()
+            main_proc_stdout = main_proc_stdout.decode("utf-8")
+            print(main_proc_stdout.rstrip())
+            if self.extra_folder_name == "" and self.main_proc_mgr.result_parent_dir in main_proc_stdout:
+                start_idx = main_proc_stdout.find(self.main_proc_mgr.result_parent_dir)
+                self.output_file_path = main_proc_stdout[start_idx:]
 
-        write_dict_to_json_file(gui_state, os.path.join(self.main_proc_mgr.gui_program_dir, "gui_state"))
+                result_dir_str_len = len(self.main_proc_mgr.result_parent_dir)
+                suffix = self.output_file_path[result_dir_str_len:]
 
-    def load_gui_state(self):
-        gui_state = read_json_file_to_dict(os.path.join(self.main_proc_mgr.gui_program_dir, "gui_state.json"))
+                slash_idx = suffix.find('/')
 
-        self.DUT_entry.set_entry_text(gui_state["dut_entry"])
-        self.comment_entry.set_entry_text(gui_state["comment_entry"])
-        self.tp_entry.set_entry_text(gui_state["tp_entry"])
-        self.bench_entry.set_entry_text(gui_state["bench_entry"])
-
-        path_settings_path = os.path.join(self.main_proc_mgr.gui_program_dir, "Path_Settings")
-        path_settings = read_json_file_to_dict(path_settings_path + ".json")
-        if path_settings["magic"] == "on":
-            self.title_label.set_label_color((0, 0, 0), (255, 0, 0))
+                self.extra_folder_name = suffix[:slash_idx]
 
     def on_exiting(self):
         # Abort any running tests before exiting the gui.
@@ -230,6 +166,6 @@ GUI_PROGRAM_DIR = "/Applications/RFDATE_GUI/"
 
 main_proc_mgr = MainProcMgr(GUI_PROGRAM_DIR)
 
-G = ETCGUI(main_proc_mgr)
+G = TCGUI(main_proc_mgr)
 
 G.window.mainloop()
