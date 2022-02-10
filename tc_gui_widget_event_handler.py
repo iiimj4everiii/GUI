@@ -3,7 +3,7 @@ import threading
 import signal
 
 
-class TCGUIEventHandler:
+class TCGUIWidgetEventHandler:
     def __init__(self, tc_gui):
         self.tc_gui = tc_gui
 

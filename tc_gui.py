@@ -1,6 +1,6 @@
 from main_proc_manager import MainProcMgr
 from gui import GUIProcess
-from tc_gui_event_handler import TCGUIEventHandler
+from tc_gui_widget_event_handler import TCGUIWidgetEventHandler
 from helpers import *
 
 
@@ -41,7 +41,7 @@ class TCGUI(GUIProcess):
         # main button
         self.main_button = self.create_button(50, 450, 200, 200)
 
-        self.event_handler = TCGUIEventHandler(self)
+        self.event_handler = TCGUIWidgetEventHandler(self)
 
         self.abort_button.set_button_callback(self.event_handler.abort_button_click)
         self.main_button.set_button_callback(self.event_handler.main_button_click)
@@ -75,8 +75,9 @@ class TCGUI(GUIProcess):
 
                 comment = self.comment_entry.get_entry_text().strip()
                 if comment != "":
-                    result_dir = check_and_fix_dir_path(os.path.join(self.main_proc_mgr.result_parent_dir, self.dut))
-                    os.rename(src=os.path.join(result_dir, self.extra_folder_name), dst=os.path.join(result_dir, comment))
+                    result_dir = os.path.join(self.main_proc_mgr.result_parent_dir, self.dut)
+                    os.rename(src=os.path.join(result_dir, self.extra_folder_name),
+                              dst=os.path.join(result_dir, comment))
 
                 return
 
@@ -87,7 +88,8 @@ class TCGUI(GUIProcess):
                 start_idx = main_proc_stdout.find(self.main_proc_mgr.result_parent_dir)
                 self.output_file_path = main_proc_stdout[start_idx:]
 
-                result_dir_str_len = len(self.main_proc_mgr.result_parent_dir)
+                result_dir = check_and_fix_dir_path(os.path.join(self.main_proc_mgr.result_parent_dir, self.dut))
+                result_dir_str_len = len(result_dir)
                 suffix = self.output_file_path[result_dir_str_len:]
 
                 slash_idx = suffix.find('/')
