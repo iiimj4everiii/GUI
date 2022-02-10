@@ -1,3 +1,8 @@
+from helpers import *
+import threading
+import signal
+
+
 class TCGUIEventHandler:
     def __init__(self, tc_gui):
         self.tc_gui = tc_gui
@@ -8,7 +13,7 @@ class TCGUIEventHandler:
 
             self.tc_gui.dut = self.tc_gui.DUT_entry.get_entry_text().strip()
 
-            if self.tc_gui.check_magic(dut):
+            if self.tc_gui.check_magic(self.tc_gui.dut):
                 return
 
             test_plan_filename = check_and_fix_file_extension(self.tc_gui.tp_entry.get_entry_text(), "csv")
