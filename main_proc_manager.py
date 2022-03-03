@@ -10,7 +10,7 @@ class MainProcMgr:
 
         # MAIN_SCRIPT_PATH = "C:\\Users\\minjiang\\Documents\\Python\\gui\\main.py"
 
-        self.python_version = "python"   # get_python_version()
+        self.python_version = get_python_version()
 
         self.gui_program_dir = check_and_fix_dir_path(gui_program_dir)
 
@@ -21,6 +21,10 @@ class MainProcMgr:
         self.test_plan_file_dir = check_and_fix_dir_path(path_settings["test_plan_file dir"])
         self.bench_file_dir = check_and_fix_dir_path(path_settings["bench_file_dir"])
         self.result_parent_dir = check_and_fix_dir_path(path_settings["result_parent_dir"])
+
+        self.tc_version_str = self.get_tc_version()
+
+    def get_tc_version(self):
 
         # Getting Telecaster Version
         proc = subprocess.Popen([self.python_version, self.main_script_path, "--version"], stdout=subprocess.PIPE)
@@ -34,7 +38,8 @@ class MainProcMgr:
             proc_stdout = get_line_from_proc_stdout(proc)
 
         start_idx = proc_stdout.find("RFDate Revision:")
-        self.tc_version_str = proc_stdout[start_idx:]
+
+        return proc_stdout[start_idx:]
 
     def spawn(self, dut_name, test_plan_filename, bench_filename):
 
