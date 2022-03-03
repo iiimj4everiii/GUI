@@ -13,25 +13,44 @@ class TCGUI(GUIProcess):
 
         self.output_file_path = ""
 
+        self.extra_folder_name_prefix = "Tests"
         self.extra_folder_name = ""
+        self.new_extra_folder_name = ""
+        self.comment = ""
 
-        self.setup_window("Telecaster", 900, 700)
+        WINDOW_WIDTH = 900
+        WINDOW_HEIGHT = 700
 
-        self.title_label = self.create_label(335, 50)
+        self.setup_window("Telecaster", WINDOW_WIDTH, WINDOW_HEIGHT)
+
+        self.title_label = self.create_label(0, 35)
         self.title_label.set_label_text("Telecaster GUI", text_size=32, text_weight="bold")
         self.title_label.set_label_color((0, 0, 0), (0, 255, 0))
+        self.title_label.center_pos_x()
 
         self.main_proc_mgr = main_proc_mgr
 
         self.main_proc = None
 
-        self.DUT_entry = self.Telecaster_entry(50, 150, "DUT:", 125, 150, 725)
+        self.tc_ver_label = self.create_label(0, 90)
+        self.tc_ver_label.set_label_text(self.main_proc_mgr.tc_version_str, text_size=10, text_weight="bold")
+        self.tc_ver_label.set_label_color((0, 0, 0), (0, 255, 0))
+        self.tc_ver_label.center_pos_x()
 
-        self.comment_entry = self.Telecaster_entry(50, 225, "Comment:", 175, 225, 675)
+        LEFT_LIMIT = 175
+        ENTRY_WIDTH = 675
 
-        self.tp_entry = self.Telecaster_entry(50, 300, "Test Plan:", 175, 300, 675)
+        DUT_label, self.DUT_entry = self.Telecaster_entry(0, 150, "DUT: ", LEFT_LIMIT, 150, ENTRY_WIDTH)
+        DUT_label.right_justify(LEFT_LIMIT)
 
-        self.bench_entry = self.Telecaster_entry(50, 375, "Bench File:", 175, 375, 675)
+        comment_label, self.comment_entry = self.Telecaster_entry(0, 225, "Comment: ", LEFT_LIMIT, 225, ENTRY_WIDTH)
+        comment_label.right_justify(LEFT_LIMIT)
+
+        tp_label, self.tp_entry = self.Telecaster_entry(0, 300, "Test Plan: ", LEFT_LIMIT, 300, ENTRY_WIDTH)
+        tp_label.right_justify(LEFT_LIMIT)
+
+        bench_label, self.bench_entry = self.Telecaster_entry(0, 375, "Bench File: ", LEFT_LIMIT, 375, ENTRY_WIDTH)
+        bench_label.right_justify(LEFT_LIMIT)
 
         # abort button
         self.abort_button = self.create_button(650, 450, 200, 200)
@@ -62,7 +81,7 @@ class TCGUI(GUIProcess):
         entry.set_entry_color((0, 0, 0), (0, 255, 0))
         entry.set_text_size(16)
 
-        return entry
+        return label, entry
 
     def main_proc_polling(self):
         while True:
@@ -73,16 +92,16 @@ class TCGUI(GUIProcess):
                 self.main_proc = None
                 self.event_handler.reset_gui_state()
 
-                comment = self.comment_entry.get_entry_text().strip()
-                if comment != "":
-                    result_dir = os.path.join(self.main_proc_mgr.result_parent_dir, self.dut)
-                    os.rename(src=os.path.join(result_dir, self.extra_folder_name),
-                              dst=os.path.join(result_dir, comment))
+                result_dir = os.path.join(self.main_proc_mgr.result_parent_dir, self.dut)
+                os.rename(src=os.path.join(result_dir, self.extra_folder_name),
+                          dst=os.path.join(result_dir, self.new_extra_folder_name))
+
+                self.extra_folder_name = ""
+                self.new_extra_folder_name = ""
 
                 return
 
-            main_proc_stdout = self.main_proc.stdout.readline()
-            main_proc_stdout = main_proc_stdout.decode("utf-8")
+            main_proc_stdout = get_line_from_proc_stdout(self.main_proc)
             print(main_proc_stdout.rstrip())
             if self.extra_folder_name == "" and self.main_proc_mgr.result_parent_dir in main_proc_stdout:
                 start_idx = main_proc_stdout.find(self.main_proc_mgr.result_parent_dir)
@@ -96,6 +115,10 @@ class TCGUI(GUIProcess):
 
                 self.extra_folder_name = suffix[:slash_idx]
 
+                if self.comment != "":
+                    self.new_extra_folder_name = self.extra_folder_name.replace(self.extra_folder_name_prefix,
+                                                                                self.comment)
+
     def on_exiting(self):
         # Abort any running tests before exiting the gui.
         self.event_handler.save_gui_state()
@@ -103,24 +126,26 @@ class TCGUI(GUIProcess):
         self.window.destroy()
 
     def check_magic(self, command):
-        if command[0:7].upper() == "--MAGIC":
-            path_settings_path = os.path.join(self.main_proc_mgr.gui_program_dir, "Path_Settings")
-            path_settings = read_json_file_to_dict(path_settings_path + ".json")
-            if command[8:].upper() == "ON":
-                path_settings["magic"] = "on"
-                self.title_label.set_label_color((0, 0, 0), (255, 0, 0))
-                write_dict_to_json_file(path_settings, path_settings_path)
-
-            elif command[8:].upper() == "OFF":
-                path_settings["magic"] = "off"
-                self.title_label.set_label_color((0, 0, 0), (0, 255, 0))
-                write_dict_to_json_file(path_settings, path_settings_path)
-
-            else:
-                print("Unknown command.")
+        if command[0:2].upper() == "--":
 
             self.DUT_entry.set_entry_text("")
 
-            return True
+            if command[2:7].upper() == "MAGIC":
+                path_settings_path = os.path.join(self.main_proc_mgr.gui_program_dir, "Path_Settings")
+                path_settings = read_json_file_to_dict(path_settings_path + ".json")
+                if command[8:].upper() == "ON":
+                    path_settings["magic"] = "on"
+                    self.title_label.set_label_color((0, 0, 0), (255, 0, 0))
+                    write_dict_to_json_file(path_settings, path_settings_path)
+
+                elif command[8:].upper() == "OFF":
+                    path_settings["magic"] = "off"
+                    self.title_label.set_label_color((0, 0, 0), (0, 255, 0))
+                    write_dict_to_json_file(path_settings, path_settings_path)
+
+                else:
+                    print("Unknown command.")
+
+                return True
 
         return False

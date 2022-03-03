@@ -27,6 +27,11 @@ def get_python_version():
     return "python" + str(sys.version_info[0]) + '.' + str(sys.version_info[1])
 
 
+def get_line_from_proc_stdout(proc):
+    proc_stdout = proc.stdout.readline()
+    return proc_stdout.decode("utf-8")
+
+
 def read_json_file_to_dict(json_filename):
     with open(json_filename) as f:
         json_dict = json.load(f)

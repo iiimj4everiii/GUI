@@ -36,12 +36,37 @@ place()	    The Place geometry manager is the simplest of the three general geom
 
 class MyLabel:
     def __init__(self, window, x=0, y=0):
+        self.window = window
+        self.x = x
+        self.y = y
+
         self.label = Label(window)
-        self.label.place(x=x, y=y)
+        self.set_label_pos_x(x)
+        self.set_label_pos_y(y)
 
     def set_label_text(self, label_text, text_size=10, text_weight="normal"):
         self.label.configure(text=label_text)
         self.label['font'] = font.Font(size=text_size, weight=text_weight)
+
+    def set_label_pos_x(self, x):
+        self.label.place(x=x, y=self.y)
+
+    def center_pos_x(self):
+        self.window.update()
+        window_width = self.window.winfo_width()
+        self.set_label_pos_x(window_width/2 - self.label.winfo_width()/2)
+
+    def right_justify(self, x_limit):
+        self.window.update()
+        self.set_label_pos_x(x_limit - self.label.winfo_width())
+
+    def set_label_pos_y(self, y):
+        self.label.place(x=self.x, y=y)
+
+    def center_pos_y(self):
+        self.window.update()
+        window_height = self.window.winfo_height()
+        self.set_label_pos_y(window_height/2 - self.label.winfo_height()/2)
 
     def set_label_color(self, background=(0, 0, 0), foreground=(0, 255, 0)):
         self.label.configure(background=Color.rgb_to_hex(background), foreground=Color.rgb_to_hex(foreground))
@@ -50,6 +75,7 @@ class MyLabel:
 class MyButton:
 
     def __init__(self, window, x=0, y=0, width=100, height=100):
+        self.window = window
         self.state = "Ready"
         self.button = Button(window, text="button")
         self.button.place(x=x, y=y, width=width, height=height)
@@ -79,6 +105,7 @@ class MyButton:
 class MyEntry:
 
     def __init__(self, window, x=0, y=0, width=100):
+        self.window = window
         self.entry_text = tk.StringVar()
         self.entry = ttk.Entry(window, textvariable=self.entry_text, justify="center")
         self.entry.place(x=x, y=y, width=width)

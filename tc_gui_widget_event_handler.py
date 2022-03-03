@@ -16,6 +16,8 @@ class TCGUIWidgetEventHandler:
             if self.tc_gui.check_magic(self.tc_gui.dut):
                 return
 
+            self.tc_gui.comment = self.tc_gui.comment_entry.get_entry_text().strip()
+
             test_plan_filename = check_and_fix_file_extension(self.tc_gui.tp_entry.get_entry_text(), "csv")
 
             bench_filename = check_and_fix_file_extension(self.tc_gui.bench_entry.get_entry_text(), "xlsx")
@@ -48,6 +50,13 @@ class TCGUIWidgetEventHandler:
             os.kill(self.tc_gui.main_proc.pid, signal.SIGTERM)
             self.tc_gui.main_proc = None
             self.reset_gui_state()
+
+            result_dir = os.path.join(self.tc_gui.main_proc_mgr.result_parent_dir, self.tc_gui.dut)
+            os.rename(src=os.path.join(result_dir, self.tc_gui.extra_folder_name),
+                      dst=os.path.join(result_dir, self.tc_gui.new_extra_folder_name))
+
+            self.tc_gui.extra_folder_name = ""
+            self.tc_gui.new_extra_folder_name = ""
 
     def main_pausing(self):
         self.tc_gui.main_button.set_button_text("Resume", 24, "bold")
